@@ -1,3 +1,5 @@
+// Less memory taking as we are not storing values anywhere
+
 void subs(string s , string o){
     if(s.length() == 0){
         cout << o << endl;
