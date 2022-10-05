@@ -31,10 +31,7 @@ const ld EPS = 1e-9;
 //     3. finding integers a and b between 0 (inclusive) and 16 (exclusive) such that N=16a+b.
 // ```
 
-void solve() {
-    int n;
-    cin >> n;
-    
+void hexa(int n){
     int a = n/16 , b = n % 16;
     
     if(a <= 9) cout << a;
@@ -42,6 +39,13 @@ void solve() {
     
     if(b <= 9) cout << b;
     else cout << (char)('A' + (b - 10));
+}
+
+void solve() {
+    int n;
+    cin >> n;
+    
+    hexa(n);
 }
 
 int main() {
