@@ -23,6 +23,12 @@ const ll MOD = 1e9 + 7;
 const ll INF = 1e9;
 const ld EPS = 1e-9;
 
+/**
+ * \brief Converts an integer to its binary representation
+ * 
+ * \param n The integer to convert
+ * \return None
+ */
 void bin_trans(int n){
     int i = 0;
     int bin[32];
@@ -38,6 +44,11 @@ void bin_trans(int n){
     }
 }
 
+/**
+ * \brief Reads an integer and calls the bin_trans function
+ * 
+ * \param n An integer
+ */
 void solve() {
     int n;
     cin >> n;
@@ -45,6 +56,12 @@ void solve() {
     
 }
 
+/**
+ * \brief Main function that calls the solve() function for a specified number of test cases
+ * 
+ * \param tc The number of test cases
+ * \return No explicit return value, as it is a void function
+ */
 int main() {
     ios_base::sync_with_stdio(0);
     cin.tie(0); cout.tie(0);

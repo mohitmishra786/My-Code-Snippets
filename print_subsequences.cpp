@@ -1,5 +1,10 @@
-// Less memory taking as we are not storing values anywhere
-
+/**
+ * \brief Recursively prints all permutations of a given string
+ * 
+ * \param s The input string
+ * \param o The output string
+ * \return None
+ */
 void subs(string s , string o){
     if(s.length() == 0){
         cout << o << endl;
@@ -10,8 +15,14 @@ void subs(string s , string o){
     subs(s.substr(1) , o + s[0]);
 
 }
+
+/**
+ * \brief Reads a string input and calls the subs function
+ * 
+ * \param input A string input
+ * \return No return value
+ */
 void solve(){
-    //Why it has to be me
     string input;
     cin >> input;
     string output = "";

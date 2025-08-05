@@ -64,6 +64,13 @@ void init_code(){
     #endif
 }
 
+/**
+ * \brief Converts a number from base 10 to a specified base
+ * 
+ * \param n The number to convert
+ * \param base The base to convert to
+ * \return The converted number in the specified base
+ */
 ll base_convreter(ll  n , int base){
 	ll base10 = n;
 	ll base_x = 0;
@@ -75,12 +82,21 @@ ll base_convreter(ll  n , int base){
 	}
 	return base_x;
 }
+/**
+ * \brief No description provided
+ * 
+ * \return No return value
+ */
 void solve(){
     //Why it has to be me
-    
-    
 }
 
+/**
+ * \brief Main function that initializes code and solves problems
+ * 
+ * \param t The number of test cases
+ * \return No explicit return value
+ */
 int main(){
     ios_base::sync_with_stdio(false);
     cin.tie(0);cout.tie(0);
@@ -91,5 +107,4 @@ int main(){
     while(t--){
         solve();
     }
-
 }

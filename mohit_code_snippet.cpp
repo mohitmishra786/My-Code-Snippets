@@ -27,6 +27,12 @@ using namespace std;
 #define pout(x,n) cout<<fixed<<setprecision(x)<<n
 #define vout(v) for(auto ii:v)cout<<ii<<' ';cout<<endl;
 void run_case();
+/**
+ * \brief Reads input, runs a function 'run_case()' for each test case, and returns 0
+ * 
+ * \param tc Number of test cases
+ * \return 0
+ */
 signed main(){
 ios_base::sync_with_stdio(false);
 cin.tie(0);cout.tie(0);int tc=1;
@@ -39,7 +45,6 @@ return 0;
 const int M = 1000000007;
 
 /* CODE STARTS HERE */
-
 void run_case(){
 	
 }
