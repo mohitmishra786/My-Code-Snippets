@@ -2,6 +2,12 @@
 #include <string>
 using namespace std;
 
+/**
+ * \brief Recursively generates all possible combinations of the input strings, starting from the last digit of the input integer, and prints the resulting combinations.
+ * \param temp The array of input strings.
+ * \param n The input integer.
+ * \param ans The current combination of strings being built.
+ */
 void solver(string temp[] , int n , string ans){
     if(n == 0){
         cout << ans << endl;
@@ -18,6 +24,10 @@ void solver(string temp[] , int n , string ans){
     }
     
 }
+/**
+ * \brief Prints all possible combinations of keypad digits for a given number.
+ * \param num The input number for which keypad combinations are to be printed.
+ */
 void printKeypad(int num){
     /*
     Given an integer number print all the possible combinations of the keypad. You do not need to return anything just print them.

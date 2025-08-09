@@ -79,6 +79,9 @@ ll phin(ll n) {ll number = n; if (n % 2 == 0) {number /= 2; while (n % 2 == 0) n
 void solve() {
     // just Learning //
 }
+/**
+ * \brief Initializes the program by setting up file redirections and timing the execution of the main logic.
+ */
 int main() {
 #ifdef Mohit_Mishra
     freopen("Input.txt", "r", stdin);

@@ -31,6 +31,10 @@ const ld EPS = 1e-9;
 //     3. finding integers a and b between 0 (inclusive) and 16 (exclusive) such that N=16a+b.
 // ```
 
+/**
+ * \brief Converts an integer to its hexadecimal representation.
+ * \param n The integer to be converted.
+ */
 void hexa(int n){
     int a = n/16 , b = n % 16;
     
@@ -41,6 +45,9 @@ void hexa(int n){
     else cout << (char)('A' + (b - 10));
 }
 
+/**
+ * \brief Solves a problem by reading an integer from input and processing it using the hexa function.
+ */
 void solve() {
     int n;
     cin >> n;
@@ -48,6 +55,9 @@ void solve() {
     hexa(n);
 }
 
+/**
+ * \brief Runs a series of test cases using the provided input and executes the solve() function for each case.
+ */
 int main() {
     ios_base::sync_with_stdio(0);
     cin.tie(0); cout.tie(0);

@@ -64,6 +64,11 @@ void init_code(){
     #endif
 }
 
+/**
+ * \brief Converts a number from a given base to decimal.
+ * \param n The number to convert.
+ * \param base The base to convert from.
+ */
 ll base_convreter(ll  n , int base){
 	ll base10 = n;
 	ll base_x = 0;
@@ -75,12 +80,16 @@ ll base_convreter(ll  n , int base){
 	}
 	return base_x;
 }
+/**
+ * \brief Solves a problem by performing a critical operation.
+ */
 void solve(){
     //Why it has to be me
-    
-    
 }
 
+/**
+ * \brief Initializes the program and executes a series of test cases, reading the number of test cases from standard input and processing each case by calling the solve function.
+ */
 int main(){
     ios_base::sync_with_stdio(false);
     cin.tie(0);cout.tie(0);

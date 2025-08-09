@@ -23,6 +23,10 @@ const ll MOD = 1e9 + 7;
 const ll INF = 1e9;
 const ld EPS = 1e-9;
 
+/**
+ * \brief Converts a decimal integer to its binary representation.
+ * \param n The decimal integer to be converted.
+ */
 void bin_trans(int n){
     int i = 0;
     int bin[32];
@@ -38,6 +42,9 @@ void bin_trans(int n){
     }
 }
 
+/**
+ * \brief Solves a binary transformation problem by reading an integer from input and processing it using the bin_trans function.
+ */
 void solve() {
     int n;
     cin >> n;
@@ -45,6 +52,10 @@ void solve() {
     
 }
 
+/**
+ * \brief Runs a loop of test cases, executing the solve() function for each case.
+ * \return None
+ */
 int main() {
     ios_base::sync_with_stdio(0);
     cin.tie(0); cout.tie(0);

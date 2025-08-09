@@ -27,6 +27,9 @@ using namespace std;
 #define pout(x,n) cout<<fixed<<setprecision(x)<<n
 #define vout(v) for(auto ii:v)cout<<ii<<' ';cout<<endl;
 void run_case();
+/**
+ * \brief Runs a specified number of test cases for a problem, reading the number of test cases from standard input and executing each case using the run_case function.
+ */
 signed main(){
 ios_base::sync_with_stdio(false);
 cin.tie(0);cout.tie(0);int tc=1;
