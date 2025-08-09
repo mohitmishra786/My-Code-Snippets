@@ -79,13 +79,6 @@ ll phin(ll n) {ll number = n; if (n % 2 == 0) {number /= 2; while (n % 2 == 0) n
 void solve() {
     // just Learning //
 }
-
-
-/**
- * \brief Main function that sets up input/output redirection and starts the solution
- * 
- * \return No return value
- */
 int main() {
 #ifdef Mohit_Mishra
     freopen("Input.txt", "r", stdin);

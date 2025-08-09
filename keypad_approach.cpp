@@ -2,14 +2,6 @@
 #include <string>
 using namespace std;
 
-/**
- * \brief Recursive function to solve a problem by generating all possible combinations of a given string
- * 
- * \param temp An array of strings
- * \param n An integer
- * \param ans An initial answer
- * \return No return value
- */
 void solver(string temp[] , int n , string ans){
     if(n == 0){
         cout << ans << endl;
@@ -26,13 +18,10 @@ void solver(string temp[] , int n , string ans){
     }
     
 }
-/**
- * \brief Prints the keypad layout for a given number
- * 
- * \param num The number to print the keypad layout for
- * \return None
- */
 void printKeypad(int num){
+    /*
+    Given an integer number print all the possible combinations of the keypad. You do not need to return anything just print them.
+    */
 	string* temp = new string[10];
 	temp[0] = "";
 	temp[1] = "";
@@ -45,4 +34,5 @@ void printKeypad(int num){
 	temp[8] = "tuv";
 	temp[9] = "wxyz";
     solver(temp , num , "");
+    
 }
