@@ -55,6 +55,8 @@ def main():
         return 0 <= y < height and 0 <= x < width
    
     turn = 0
+    last_autoplace = None
+    autoplace_fail_count = 0
     
     while True:
         turn += 1
@@ -92,8 +94,9 @@ def main():
        
         actions = []
         paint = 3
+        placed_this_turn = set()
        
-        # Simple strategy: Use AUTOPLACE for shortest unconnected desired connection
+        # Find best AUTOPLACE connection (shortest unconnected)
         best_connection = None
         best_dist = float('inf')
         
@@ -107,71 +110,151 @@ def main():
                 if dst_id not in towns:
                     continue
                 
-                # Skip if already connected
                 if (src_id, dst_id) in connected_pairs:
                     continue
                 
                 tx, ty = towns[dst_id]
                 dist = abs(tx - sx) + abs(ty - sy)
                 
+                # Skip if we just tried this and failed
+                if last_autoplace == (sx, sy, tx, ty) and autoplace_fail_count >= 2:
+                    continue
+                
                 if dist < best_dist:
                     best_dist = dist
                     best_connection = (src_id, dst_id, sx, sy, tx, ty)
         
-        # Place AUTOPLACE command
-        if best_connection:
-            _, _, sx, sy, tx, ty = best_connection
-            actions.append(f"AUTOPLACE {sx} {sy} {tx} {ty}")
-        
-        # Try to use remaining paint points strategically
-        # Priority 1: Place track on POI if possible
-        for px, py in poi_cells:
-            if track_owner[py][px] == -1 and not inked[py][px]:
+        # Manual track placement strategy - BUILD PATHS INCREMENTALLY
+        # Priority 1: Build towards POIs (side quest)
+        poi_progress = False
+        if poi_cells:
+            # Find closest POI to our existing network
+            best_poi_cell = None
+            best_poi_dist = float('inf')
+            
+            for px, py in poi_cells:
+                # Skip if already has track
+                if track_owner[py][px] != -1 or inked[py][px]:
+                    continue
+                
+                # Check cost - only consider if affordable
                 cost = paint_cost(type_grid[py][px])
-                if cost <= paint:
+                if cost > 3:
+                    continue
+                
+                # Find distance to nearest town or our track
+                min_dist = float('inf')
+                for y in range(height):
+                    for x in range(width):
+                        if track_owner[y][x] == my_id or (x, y) in town_set:
+                            dist = abs(px - x) + abs(py - y)
+                            if dist < min_dist:
+                                min_dist = dist
+                
+                if min_dist < best_poi_dist:
+                    best_poi_dist = min_dist
+                    best_poi_cell = (px, py, cost)
+            
+            # If POI is reachable, build path towards it
+            if best_poi_cell:
+                px, py, poi_cost = best_poi_cell
+                
+                # If we can afford the POI directly, place it
+                if poi_cost <= paint:
                     actions.append(f"PLACE_TRACKS {px} {py}")
-                    paint -= cost
-                    track_owner[py][px] = my_id  # Mark as placed
-                    break
+                    paint -= poi_cost
+                    track_owner[py][px] = my_id
+                    placed_this_turn.add((px, py))
+                    poi_progress = True
+                else:
+                    # Build path towards POI incrementally
+                    # Find cells adjacent to our network that move towards POI
+                    candidates = []
+                    
+                    for y in range(height):
+                        for x in range(width):
+                            if track_owner[y][x] == my_id or (x, y) in town_set:
+                                for k in range(4):
+                                    ny, nx = y + dr[k], x + dc[k]
+                                    
+                                    if not in_bounds(ny, nx):
+                                        continue
+                                    if (nx, ny) in town_set or (nx, ny) in placed_this_turn:
+                                        continue
+                                    if track_owner[ny][nx] != -1 or inked[ny][nx]:
+                                        continue
+                                    
+                                    cost = paint_cost(type_grid[ny][nx])
+                                    dist_to_poi = abs(nx - px) + abs(ny - py)
+                                    
+                                    # Lower distance to POI is better
+                                    candidates.append((dist_to_poi, cost, nx, ny))
+                    
+                    # Sort by distance to POI, then by cost
+                    candidates.sort()
+                    
+                    # Place tracks moving towards POI
+                    for _, cost, nx, ny in candidates[:3]:  # Place up to 3 tracks
+                        if paint >= cost and (nx, ny) not in placed_this_turn:
+                            actions.append(f"PLACE_TRACKS {nx} {ny}")
+                            paint -= cost
+                            track_owner[ny][nx] = my_id
+                            placed_this_turn.add((nx, ny))
+                            poi_progress = True
+                            if paint <= 0:
+                                break
         
-        # Priority 2: Expand from our tracks or towns to fill remaining paint
-        if paint > 0:
-            placed_this_turn = set()
+        # Priority 2: If we have paint left and POI isn't making progress, expand network
+        if paint > 0 and not poi_progress:
+            expansion_candidates = []
             
             for y in range(height):
                 for x in range(width):
-                    if paint <= 0:
-                        break
-                    
-                    # Find our tracks or towns
                     if track_owner[y][x] == my_id or (x, y) in town_set:
-                        # Check neighbors
                         for k in range(4):
                             ny, nx = y + dr[k], x + dc[k]
                             
                             if not in_bounds(ny, nx):
                                 continue
-                            if (nx, ny) in town_set:
+                            if (nx, ny) in town_set or (nx, ny) in placed_this_turn:
                                 continue
-                            if (nx, ny) in placed_this_turn:
-                                continue
-                            if track_owner[ny][nx] != -1:
-                                continue
-                            if inked[ny][nx]:
+                            if track_owner[ny][nx] != -1 or inked[ny][nx]:
                                 continue
                             
                             cost = paint_cost(type_grid[ny][nx])
-                            if cost <= paint:
-                                actions.append(f"PLACE_TRACKS {nx} {ny}")
-                                paint -= cost
-                                track_owner[ny][nx] = my_id
-                                placed_this_turn.add((nx, ny))
-                                break
-                
-                if paint <= 0:
-                    break
+                            # Prefer cheap cells (plains)
+                            expansion_candidates.append((cost, nx, ny))
+            
+            # Remove duplicates and sort by cost
+            unique_candidates = {}
+            for cost, nx, ny in expansion_candidates:
+                if (nx, ny) not in unique_candidates:
+                    unique_candidates[(nx, ny)] = cost
+            
+            sorted_candidates = sorted(unique_candidates.items(), key=lambda x: x[1])
+            
+            for (nx, ny), cost in sorted_candidates:
+                if paint >= cost and (nx, ny) not in placed_this_turn:
+                    actions.append(f"PLACE_TRACKS {nx} {ny}")
+                    paint -= cost
+                    track_owner[ny][nx] = my_id
+                    placed_this_turn.add((nx, ny))
+                    if paint <= 0:
+                        break
         
-        # Disruption strategy: Target enemy-heavy regions
+        # Add AUTOPLACE command
+        if best_connection:
+            _, _, sx, sy, tx, ty = best_connection
+            actions.append(f"AUTOPLACE {sx} {sy} {tx} {ty}")
+            
+            # Track if same as last turn
+            if last_autoplace == (sx, sy, tx, ty):
+                autoplace_fail_count += 1
+            else:
+                autoplace_fail_count = 0
+                last_autoplace = (sx, sy, tx, ty)
+        
+        # Disruption: Target enemy-heavy regions close to inking
         region_enemy = {}
         
         for y in range(height):
@@ -197,7 +280,6 @@ def main():
         for rid, info in region_enemy.items():
             score = info['count'] * 10
             
-            # Prioritize regions close to inking
             if info['instability'] == 3:
                 score += 100
             elif info['instability'] == 2:
