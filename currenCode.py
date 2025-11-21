@@ -198,7 +198,7 @@ def main():
                         continue
                     
                     cost, path = find_best_path(town.x, town.y, poi_x, poi_y, budget=3)
-                    if cost < INF:
+                    if cost < int(1e9):
                         side_quest_candidates.append((cost, town.id, (poi_x, poi_y), path))
        
         # Sort by cost (cheapest first)
@@ -224,7 +224,7 @@ def main():
                     continue
                
                 cost, path = find_best_path(town_a.x, town_a.y, town_b.x, town_b.y, budget=3)
-                if cost < INF and len(path) > 0:
+                if cost < int(1e9) and len(path) > 0:
                     # Calculate priority
                     priority = cost  # Prefer cheaper connections
                     connection_candidates.append((priority, cost, town_a.id, town_b.id, path))
@@ -275,34 +275,35 @@ def main():
                         break
        
         # Strategic disruption
-        region_analysis = defaultdict(lambda: {
-            'enemy_tracks': 0,
-            'my_tracks': 0,
-            'instability': 0,
-            'is_town_region': False,
-            'cells': []
-        })
-       
+        region_stats = {}
+        
         for y in range(height):
             for x in range(width):
                 rid = region_grid[y][x]
                 if inked[y][x]:
                     continue
                     
-                region_analysis[rid]['instability'] = instability[y][x]
-                region_analysis[rid]['is_town_region'] = rid in town_regions
-                region_analysis[rid]['cells'].append((x, y))
+                if rid not in region_stats:
+                    region_stats[rid] = {
+                        'enemy_tracks': 0,
+                        'my_tracks': 0,
+                        'instability': instability[y][x],
+                        'is_town_region': rid in town_regions,
+                        'cells': []
+                    }
+                
+                region_stats[rid]['cells'].append((x, y))
                 
                 if track_owner[y][x] == foe_id:
-                    region_analysis[rid]['enemy_tracks'] += 1
+                    region_stats[rid]['enemy_tracks'] += 1
                 elif track_owner[y][x] == my_id:
-                    region_analysis[rid]['my_tracks'] += 1
+                    region_stats[rid]['my_tracks'] += 1
        
         # Find best region to disrupt
         best_disrupt = None
         best_score = -1
        
-        for rid, stats in region_analysis.items():
+        for rid, stats in region_stats.items():
             if stats['is_town_region'] or stats['instability'] >= 4:
                 continue
                
