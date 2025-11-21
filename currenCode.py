@@ -1,12 +1,11 @@
 import sys
-from collections import deque, defaultdict
-import heapq
-
-def debug(*args):
-    print(*args, file=sys.stderr, flush=True)
+from collections import deque
 
 def paint_cost(cell_type):
     return {0: 1, 1: 2, 2: 3, 3: 3}[cell_type]
+
+def debug(*args):
+    print(*args, file=sys.stderr, flush=True)
 
 def main():
     my_id = int(input())
@@ -25,12 +24,11 @@ def main():
             type_grid[y][x] = cell_type
    
     town_count = int(input())
-    towns = {}  # town_id -> (x, y)
-    desires = {}  # town_id -> list of desired connections
-    town_positions = {}  # (x,y) -> town_id
+    towns = {}
+    desires = {}
+    town_set = set()
     poi_cells = set()
    
-    # Find POIs
     for y in range(height):
         for x in range(width):
             if type_grid[y][x] == 3:
@@ -42,7 +40,7 @@ def main():
         desired_s = parts[3] if len(parts) > 3 else "x"
         
         towns[tid] = (tx, ty)
-        town_positions[(tx, ty)] = tid
+        town_set.add((tx, ty))
         town_regions.add(region_grid[ty][tx])
         
         if desired_s not in ("x", "-", ""):
@@ -55,9 +53,6 @@ def main():
    
     def in_bounds(y, x):
         return 0 <= y < height and 0 <= x < width
-   
-    def is_town_cell(x, y):
-        return (x, y) in town_positions
    
     turn = 0
     
@@ -72,7 +67,7 @@ def main():
         track_owner = [[-1] * width for _ in range(height)]
         instability_grid = [[0] * width for _ in range(height)]
         inked = [[False] * width for _ in range(height)]
-        active_connections = set()
+        connected_pairs = set()
        
         for y in range(height):
             for x in range(width):
@@ -88,71 +83,19 @@ def main():
                 
                 if part_conn != "x":
                     for conn in part_conn.split(','):
-                        active_connections.add(conn)
-       
-        # Parse active connections to know which are already done
-        connected_pairs = set()
-        for conn in active_connections:
-            parts = conn.split('-')
-            if len(parts) == 2:
-                try:
-                    src_id, dst_id = int(parts[0]), int(parts[1])
-                    connected_pairs.add((src_id, dst_id))
-                except:
-                    pass
-       
-        def can_reach(sx, sy, tx, ty):
-            """BFS to check if destination is reachable through non-inked regions"""
-            vis = [[False] * width for _ in range(height)]
-            q = deque([(sy, sx)])
-            vis[sy][sx] = True
-           
-            while q:
-                y, x = q.popleft()
-                if y == ty and x == tx:
-                    return True
-               
-                for k in range(4):
-                    ny, nx = y + dr[k], x + dc[k]
-                    if not in_bounds(ny, nx) or vis[ny][nx] or inked[ny][nx]:
-                        continue
-                    vis[ny][nx] = True
-                    q.append((ny, nx))
-           
-            return False
+                        parts_conn = conn.split('-')
+                        if len(parts_conn) == 2:
+                            try:
+                                connected_pairs.add((int(parts_conn[0]), int(parts_conn[1])))
+                            except:
+                                pass
        
         actions = []
         paint = 3
        
-        # Strategy 1: Try to complete side quest (connect to POI)
-        if poi_cells:
-            for tid, (tx, ty) in towns.items():
-                for poi_x, poi_y in poi_cells:
-                    # Check if we can build path
-                    if can_reach(tx, ty, poi_x, poi_y):
-                        # Try to place track on or near POI
-                        if track_owner[poi_y][poi_x] == -1 and not inked[poi_y][poi_x]:
-                            cost = paint_cost(type_grid[poi_y][poi_x])
-                            if cost <= paint:
-                                actions.append(f"PLACE_TRACKS {poi_x} {poi_y}")
-                                paint -= cost
-                                break
-                        else:
-                            # Try to build towards POI
-                            for k in range(4):
-                                ny, nx = poi_y + dr[k], poi_x + dc[k]
-                                if in_bounds(ny, nx) and track_owner[ny][nx] == -1 and not inked[ny][nx]:
-                                    if not is_town_cell(nx, ny):
-                                        cost = paint_cost(type_grid[ny][nx])
-                                        if cost <= paint:
-                                            actions.append(f"PLACE_TRACKS {nx} {ny}")
-                                            paint -= cost
-                                            break
-                if paint <= 0:
-                    break
-       
-        # Strategy 2: Use AUTOPLACE to build connections
-        connection_priority = []
+        # Simple strategy: Use AUTOPLACE for shortest unconnected desired connection
+        best_connection = None
+        best_dist = float('inf')
         
         for src_id, dest_list in desires.items():
             if src_id not in towns:
@@ -169,102 +112,109 @@ def main():
                     continue
                 
                 tx, ty = towns[dst_id]
+                dist = abs(tx - sx) + abs(ty - sy)
                 
-                # Check if reachable
-                if can_reach(sx, sy, tx, ty):
-                    # Calculate priority (prefer shorter distances)
-                    dist = abs(tx - sx) + abs(ty - sy)
-                    connection_priority.append((dist, src_id, dst_id, sx, sy, tx, ty))
+                if dist < best_dist:
+                    best_dist = dist
+                    best_connection = (src_id, dst_id, sx, sy, tx, ty)
         
-        # Sort by distance (shortest first for easier completion)
-        connection_priority.sort()
-        
-        # Try to build using AUTOPLACE
-        if connection_priority and len(actions) == 0:
-            _, src_id, dst_id, sx, sy, tx, ty = connection_priority[0]
+        # Place AUTOPLACE command
+        if best_connection:
+            _, _, sx, sy, tx, ty = best_connection
             actions.append(f"AUTOPLACE {sx} {sy} {tx} {ty}")
-       
-        # Strategy 3: Manual track placement for expansion
+        
+        # Try to use remaining paint points strategically
+        # Priority 1: Place track on POI if possible
+        for px, py in poi_cells:
+            if track_owner[py][px] == -1 and not inked[py][px]:
+                cost = paint_cost(type_grid[py][px])
+                if cost <= paint:
+                    actions.append(f"PLACE_TRACKS {px} {py}")
+                    paint -= cost
+                    track_owner[py][px] = my_id  # Mark as placed
+                    break
+        
+        # Priority 2: Expand from our tracks or towns to fill remaining paint
         if paint > 0:
-            # Find our existing tracks and expand from them
-            expansion_cells = []
+            placed_this_turn = set()
             
             for y in range(height):
                 for x in range(width):
-                    if track_owner[y][x] == my_id or is_town_cell(x, y):
-                        # Look at neighbors
-                        for k in range(4):
-                            ny, nx = y + dr[k], x + dc[k]
-                            if in_bounds(ny, nx) and track_owner[ny][nx] == -1 and not inked[ny][nx]:
-                                if not is_town_cell(nx, ny):
-                                    cost = paint_cost(type_grid[ny][nx])
-                                    # Prefer plains (cheap)
-                                    priority = cost
-                                    # Bonus if near POI
-                                    if (nx, ny) in poi_cells:
-                                        priority -= 10
-                                    expansion_cells.append((priority, cost, nx, ny))
-            
-            # Sort by priority
-            expansion_cells.sort()
-            
-            # Place tracks
-            placed = set()
-            for _, cost, x, y in expansion_cells:
-                if paint >= cost and (x, y) not in placed:
-                    actions.append(f"PLACE_TRACKS {x} {y}")
-                    paint -= cost
-                    placed.add((x, y))
                     if paint <= 0:
                         break
-       
-        # Strategy 4: Aggressive disruption
-        region_enemy_count = {}
-        region_instability = {}
+                    
+                    # Find our tracks or towns
+                    if track_owner[y][x] == my_id or (x, y) in town_set:
+                        # Check neighbors
+                        for k in range(4):
+                            ny, nx = y + dr[k], x + dc[k]
+                            
+                            if not in_bounds(ny, nx):
+                                continue
+                            if (nx, ny) in town_set:
+                                continue
+                            if (nx, ny) in placed_this_turn:
+                                continue
+                            if track_owner[ny][nx] != -1:
+                                continue
+                            if inked[ny][nx]:
+                                continue
+                            
+                            cost = paint_cost(type_grid[ny][nx])
+                            if cost <= paint:
+                                actions.append(f"PLACE_TRACKS {nx} {ny}")
+                                paint -= cost
+                                track_owner[ny][nx] = my_id
+                                placed_this_turn.add((nx, ny))
+                                break
+                
+                if paint <= 0:
+                    break
+        
+        # Disruption strategy: Target enemy-heavy regions
+        region_enemy = {}
         
         for y in range(height):
             for x in range(width):
-                rid = region_grid[y][x]
-                if inked[y][x] or rid in town_regions:
+                if inked[y][x]:
                     continue
                 
-                if rid not in region_enemy_count:
-                    region_enemy_count[rid] = 0
-                    region_instability[rid] = instability_grid[y][x]
+                rid = region_grid[y][x]
+                if rid in town_regions:
+                    continue
                 
                 if track_owner[y][x] == foe_id:
-                    region_enemy_count[rid] += 1
-       
-        # Find best region to disrupt
+                    if rid not in region_enemy:
+                        region_enemy[rid] = {
+                            'count': 0,
+                            'instability': instability_grid[y][x]
+                        }
+                    region_enemy[rid]['count'] += 1
+        
         best_disrupt = None
         best_score = -1
-       
-        for rid, enemy_count in region_enemy_count.items():
-            if enemy_count == 0:
-                continue
+        
+        for rid, info in region_enemy.items():
+            score = info['count'] * 10
             
-            score = enemy_count * 10
-            
-            inst = region_instability[rid]
             # Prioritize regions close to inking
-            if inst == 3:
-                score += 100  # One more disruption inks it
-            elif inst == 2:
+            if info['instability'] == 3:
+                score += 100
+            elif info['instability'] == 2:
                 score += 50
-            elif inst == 1:
+            elif info['instability'] == 1:
                 score += 20
             
             if score > best_score:
                 best_score = score
                 best_disrupt = rid
-       
+        
         if best_disrupt is not None:
             actions.append(f"DISRUPT {best_disrupt}")
-       
-        # Output
+        
         if not actions:
             actions = ["WAIT"]
-       
+        
         print(";".join(actions))
         sys.stdout.flush()
 
